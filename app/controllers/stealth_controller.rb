@@ -3,6 +3,7 @@ class StealthController < ApplicationController
   unloadable
 
   before_action :authorize_global, :only => :toggle
+  accept_api_auth :toggle
 
   def toggle
     is_cloaked = toggle_for_params
