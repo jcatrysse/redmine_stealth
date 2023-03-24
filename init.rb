@@ -1,9 +1,9 @@
 require 'redmine'
 require 'redmine/i18n'
-require 'redmine_stealth'
-require 'redmine_stealth/hooks'
-require 'redmine_stealth/issue_stealth_patch'
-require 'redmine_stealth/journal_stealth_patch'
+require File.dirname(__FILE__) + '/lib/redmine_stealth'
+require File.dirname(__FILE__) + '/lib/redmine_stealth/hooks'
+require File.dirname(__FILE__) + '/lib/redmine_stealth/issue_stealth_patch'
+require File.dirname(__FILE__) + '/lib/redmine_stealth/journal_stealth_patch'
 
 Redmine::Plugin.register :redmine_stealth do
 
