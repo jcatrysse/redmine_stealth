@@ -9,9 +9,7 @@ Redmine::Plugin.register :redmine_stealth do
 
   extend Redmine::I18n
 
-  # plugin_locale_glob = respond_to?(:directory) ?
-  #   File.join( File.dirname(__FILE__) , 'config', 'locales', '*.yml') :
-  plugin_locale_glob = File.join(Rails.root, 'vendor', 'plugins',
+  plugin_locale_glob = File.join(Rails.root, 'plugins',
                                  'redmine_stealth', 'config', 'locales', '*.yml')
 
   ::I18n.load_path += Dir.glob(plugin_locale_glob)
@@ -24,19 +22,21 @@ Redmine::Plugin.register :redmine_stealth do
   }
 
   name 'Redmine Stealth plugin'
-  author 'Tomasz Gietek for Omega Code Sp. z o.o.'
+  author 'Tomasz Gietek for Omega Code Sp. z o.o., updated by Jan Catrysse'
   description 'Enables users to disable Redmine email notifications for their actions'
-  version '0.7.0'
+  version '0.8.0'
   author_url 'https://github.com/omegacodepl'
 
-  permission :toggle_stealth_mode, :stealth => :toggle
+  Redmine::AccessControl.map do |map|
+    map.permission :toggle_stealth_mode, { :stealth => [:toggle] }, :global => true
+  end
 
   toggle_url = { :controller => 'stealth', :action => 'toggle' }
 
   decide_toggle_display = lambda do |*_|
     can_toggle = false
     if (user = User.current)
-      can_toggle = user.allowed_to?(toggle_url, nil, :global => true)
+      can_toggle = user.allowed_to?(:toggle_stealth_mode, nil, :global => true)
     end
     can_toggle
   end
