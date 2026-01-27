@@ -1,26 +1,11 @@
-require 'redmine'
-require 'redmine/i18n'
-require File.dirname(__FILE__) + '/lib/redmine_stealth'
-require File.dirname(__FILE__) + '/lib/redmine_stealth/hooks'
-require File.dirname(__FILE__) + '/lib/redmine_stealth/issue_stealth_patch'
-require File.dirname(__FILE__) + '/lib/redmine_stealth/journal_stealth_patch'
+# frozen_string_literal: true
+
+require_relative 'lib/redmine_stealth'
+require_relative 'lib/redmine_stealth/hooks'
+require_relative 'lib/redmine_stealth/issue_stealth_patch'
+require_relative 'lib/redmine_stealth/journal_stealth_patch'
 
 Redmine::Plugin.register :redmine_stealth do
-
-  extend Redmine::I18n
-
-  plugin_locale_glob = File.join(Rails.root, 'plugins',
-                                 'redmine_stealth', 'config', 'locales', '*.yml')
-
-  ::I18n.load_path += Dir.glob(plugin_locale_glob)
-
-  menu_options = {
-    :html => {
-      'id' => 'stealth_toggle',
-      'data-failure-message' => l(RedmineStealth::MESSAGE_TOGGLE_FAILED)
-    }
-  }
-
   name 'Redmine Stealth plugin'
   author 'Tomasz Gietek for Omega Code Sp. z o.o., updated by Jan Catrysse'
   description 'Enables users to disable Redmine email notifications for their actions'
@@ -28,29 +13,35 @@ Redmine::Plugin.register :redmine_stealth do
   author_url 'https://github.com/omegacodepl'
 
   Redmine::AccessControl.map do |map|
-    map.permission :toggle_stealth_mode, { :stealth => [:toggle] }, :global => true
+    map.permission :toggle_stealth_mode, { stealth: [:toggle] }, global: true
   end
 
-  toggle_url = { :controller => 'stealth', :action => 'toggle' }
+  toggle_url = { controller: 'stealth', action: 'toggle' }
 
-  decide_toggle_display = lambda do |*_|
-    can_toggle = false
-    if (user = User.current)
-      can_toggle = user.allowed_to?(:toggle_stealth_mode, nil, :global => true)
-    end
-    can_toggle
+  decide_toggle_display = lambda do |_project|
+    user = User.current
+    user && user.allowed_to?(:toggle_stealth_mode, nil, global: true)
   end
 
-  stealth_menuitem_captioner = lambda do |project|
+  stealth_menuitem_captioner = lambda do |_project|
     is_cloaked = RedmineStealth.cloaked?
     RedmineStealth.status_label(is_cloaked)
   end
 
-  menu_options[:html].update('remote' => true, 'method' => :post)
-  menu :account_menu, :stealth, toggle_url, {
-    :first => true,
-    :if => decide_toggle_display,
-    :caption => stealth_menuitem_captioner
-  }.merge(menu_options)
+  # Belangrijk: hier GEEN l(...) doen
+  menu_options = {
+    html: {
+      'id' => 'stealth_toggle',
+      # zet een key/string, geen vertaling op init moment
+      'data-failure-message' => 'label_failed_to_toggle_stealth_mode',
+      'remote' => true,
+      'method' => :post
+    }
+  }
 
+  menu :account_menu, :stealth, toggle_url, {
+    first: true,
+    if: decide_toggle_display,
+    caption: stealth_menuitem_captioner
+  }.merge(menu_options)
 end
