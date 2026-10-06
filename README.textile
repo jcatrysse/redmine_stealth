@@ -12,11 +12,25 @@ h2. Installation
 
 h2. Usage
 
-# Click "Enable stealth mode" in the account menu in the upper right corner. If you don't see this option, the "Toggle stealth mode" permission may not be enabled for your role.
+# Click "Enable stealth mode" in the account menu in the upper right corner (on Redmine 7: open the menu under your avatar; on a phone: the menu button, under Profile). If you don't see this option, the "Toggle stealth mode" permission may not be enabled for your role. While stealth mode is on, the top menu turns black and the header dark.
 # Do whatever it is that needs doing. Redmine will not send emails as a result of your actions while stealth mode is enabled. Other users's actions will continue to send email unless they have also activated stealth mode.
-# Click "Disable stealth mode" in the account menu. Don't worry. You got away with it.
+# Click "Disable stealth mode" in the account menu. Don't worry. You got away with it. Signing in again also switches stealth mode off.
+
+Stealth mode silences the mails for new issues and issue updates (notes, changes) made by you. Other mails (wiki, news, forums, documents) and Redmine 7 webhooks are not affected.
+
+h2. REST API
+
+<pre>
+POST /stealth/toggle.json   (or .xml)
+     toggle=true | false    optional; without it the state flips
+     X-Redmine-API-Key: ... (or HTTP basic auth)
+=> {"is_cloaked": true}
+</pre>
+
+The user needs the "Toggle stealth mode" permission and the REST API must be enabled.
 
 h2. Compatibility
+* Version 0.8.0 (GEOxyz) runs on Redmine 7.0 (Rails 8.1) and 5.1; tested on PostgreSQL and MariaDB. Tests: @rake redmine:plugins:test NAME=redmine_stealth@.
 * Version 0.7.0 was written for Redmine 4.1 and tested for backwards-compatibility with Redmine 3.1.
 * Version 0.6.0 was written for Redmine 2.1.2 and tested for backwards-compatibility with Redmine 2.0.3 and Redmine 1.4.3.
 * Version 0.5.0 was written for Redmine 2.0.3 and tested for backwards-compatibility with Redmine 1.4.3.
