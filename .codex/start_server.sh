@@ -74,10 +74,12 @@ if [ "$adapter" = mysql2 ] && command -v mysql >/dev/null 2>&1; then
     mysql -h "$host" -P "$port" -uroot -p"$password" -e "$grant" 2>/dev/null || true
 fi
 
-if [ ! -f "$REDMINE_DIR/config/configuration.yml" ]; then
+# Only for the server environment: under "default:" it would also send the test
+# environment's mail to files, and every test counting deliveries would fail.
+if [ ! -f "$REDMINE_DIR/config/configuration.yml" ] || { grep -q '^default:' "$REDMINE_DIR/config/configuration.yml" && grep -q 'tmp/mails' "$REDMINE_DIR/config/configuration.yml"; }; then
   mkdir -p "$REDMINE_DIR/tmp/mails"
   cat > "$REDMINE_DIR/config/configuration.yml" <<YAML
-default:
+$RMP_SERVER_ENV:
   email_delivery:
     delivery_method: :file
     file_settings:
