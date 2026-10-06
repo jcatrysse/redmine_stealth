@@ -47,7 +47,7 @@ module RedmineStealth
   def javascript_toggle_statement(is_cloaked)
     label = status_label(is_cloaked)
     method = "RedmineStealth.#{ is_cloaked ? 'cloak' : 'decloak' }"
-    "#{method}('#{label}');"
+    "#{method}(#{label.to_json});"
   end
 
 end
