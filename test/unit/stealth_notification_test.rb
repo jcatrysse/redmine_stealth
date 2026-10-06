@@ -70,6 +70,33 @@ class StealthNotificationTest < ActiveSupport::TestCase
     assert_operator ActionMailer::Base.deliveries.size, :>, 0
   end
 
+  # Prepended, not alias-chained: redmine_checklists prepends
+  # Journal#send_notification too, and an alias chain applied after that
+  # prepend recursed until SystemStackError on every journal.
+  def test_patches_are_prepended
+    [[Issue, RedmineStealth::IssueStealthPatch], [Journal, RedmineStealth::JournalStealthPatch]].each do |klass, patch|
+      assert_operator klass.ancestors.index(patch), :<, klass.ancestors.index(klass)
+      assert_not klass.method_defined?(:send_notification_without_stealth)
+      assert_not klass.private_method_defined?(:send_notification_without_stealth)
+    end
+  end
+
+  def test_another_prepended_send_notification_still_runs
+    calls = []
+    klass = Class.new do
+      define_method(:send_notification) { calls << :core }
+    end
+    klass.prepend(Module.new { define_method(:send_notification) { calls << :other; super() } })
+    klass.prepend(RedmineStealth::JournalStealthPatch)
+    User.current = User.find(3)
+    klass.new.send_notification
+    assert_equal [:other, :core], calls
+    set_cloaked(User.current, true)
+    calls.clear
+    klass.new.send_notification
+    assert_equal [], calls
+  end
+
   # Redmine 7 webhooks are integrations, not notifications to people: stealth
   # mode leaves them alone (see docs/REDMINE7-MIGRATION.md, open questions).
   if defined?(::Webhook)
