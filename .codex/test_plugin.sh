@@ -1,57 +1,36 @@
 #!/usr/bin/env bash
+#
+# Runs the plugin's tests in the Redmine checkout prepared by
+# ./.codex/redmine_clone.sh and ./.codex/test_setup.sh (same RMP_DB).
+# The plugin copy under redmine/plugins/ is refreshed first, so the run
+# always sees the working tree.
+#
+#   ./.codex/test_plugin.sh                       # all tests in test/
+#   ./.codex/test_plugin.sh test/unit/foo_test.rb # one file
+#
+# Minitest (Redmine's own framework, `rake redmine:plugins:test`); a spec/
+# directory, if one is ever added, runs with rspec.
 set -euo pipefail
 
-REDMINE_DIR="${REDMINE_DIR:-redmine}"
-PLUGIN_NAME="$(basename "$(pwd)")"
-MISE_BIN="${MISE_BIN:-mise}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REDMINE_DIR="${REDMINE_DIR:-$ROOT/redmine}"
+case "$REDMINE_DIR" in /*) ;; *) REDMINE_DIR="$ROOT/$REDMINE_DIR" ;; esac
+PLUGIN_NAME="$(basename "$ROOT")"
+export RAILS_ENV=test
 
-detect_ruby_version() {
-  local version=""
-
-  if [ -f ".ruby-version" ]; then
-    version="$(tr -d '\n' < .ruby-version)"
-  elif [ -f "Gemfile" ]; then
-    local ruby_line=""
-    ruby_line="$(grep -E "^[[:space:]]*ruby " Gemfile | head -n 1 || true)"
-
-    version="$(echo "$ruby_line" | sed -E -n "s/.*ruby[[:space:]]*['\\\"]([0-9]+\\.[0-9]+(\\.[0-9]+)?)[\"'].*$/\\1/p")"
-    if [ -z "$version" ]; then
-      version="$(echo "$ruby_line" | sed -E -n "s/.*~>[[:space:]]*([0-9]+\\.[0-9]+(\\.[0-9]+)?).*/\\1/p")"
-    fi
-    if [ -z "$version" ]; then
-      local upper=""
-      upper="$(echo "$ruby_line" | sed -E -n "s/.*<[[:space:]]*([0-9]+\\.[0-9]+(\\.[0-9]+)?).*/\\1/p")"
-      if [ -n "$upper" ]; then
-        local major="${upper%%.*}"
-        local minor="${upper#*.}"
-        minor="${minor%%.*}"
-        if [ "$minor" -gt 0 ]; then
-          minor=$((minor - 1))
-        fi
-        version="${major}.${minor}"
-      fi
-    fi
-  fi
-
-  echo "$version"
-}
+rsync -a --delete --exclude "/$(basename "$REDMINE_DIR")/" --exclude /.git/ "$ROOT/" "$REDMINE_DIR/plugins/$PLUGIN_NAME/"
 
 cd "$REDMINE_DIR"
 mkdir -p tmp/test-results
 
-RUBY_VERSION="$(detect_ruby_version)"
-
-if [ -n "$RUBY_VERSION" ]; then
-  if command -v "$MISE_BIN" >/dev/null 2>&1; then
-    "$MISE_BIN" exec "ruby@$RUBY_VERSION" -- bundle exec rspec "plugins/$PLUGIN_NAME/spec" --format progress
-  else
-    echo "mise is required to run tests with Ruby $RUBY_VERSION. Please run ./.codex/test_setup.sh first." >&2
-    exit 1
-  fi
-else
-  if ! command -v bundle >/dev/null 2>&1; then
-    echo "Bundler is not available. Please run ./.codex/test_setup.sh first." >&2
-    exit 1
-  fi
+if [ -d "plugins/$PLUGIN_NAME/spec" ]; then
   bundle exec rspec "plugins/$PLUGIN_NAME/spec" --format progress
+fi
+
+if [ $# -gt 0 ]; then
+  files=()
+  for f in "$@"; do files+=("plugins/$PLUGIN_NAME/$f"); done
+  bundle exec ruby -Itest -e 'ARGV.each { |f| require File.expand_path(f) }' "${files[@]}"
+else
+  bundle exec rake redmine:plugins:test NAME="$PLUGIN_NAME"
 fi
