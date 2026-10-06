@@ -48,6 +48,8 @@ case "${1:-}" in
 esac
 
 rmp_require_checkout
+# The server runs the copy under plugins/: refresh it, or a restart serves stale code.
+rsync -a --delete --exclude /redmine/ --exclude /.git/ "$PLUGIN_ROOT/" "$REDMINE_DIR/plugins/$PLUGIN_NAME/"
 export LANG="${LANG:-C.UTF-8}" LC_ALL="${LC_ALL:-C.UTF-8}"
 
 # Add (or replace) the server environment in database.yml, copied from the test
