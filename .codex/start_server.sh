@@ -118,7 +118,8 @@ fi
 mkdir -p "$REDMINE_DIR/tmp/pids" "$REDMINE_DIR/log"
 if [ "${USE_MISE:-0}" = 1 ]; then prefix=("$MISE_BIN" exec "ruby@$RUBY_TARGET" --); else prefix=(); fi
 (cd "$REDMINE_DIR" && nohup "${prefix[@]}" bundle exec ruby bin/rails server -e "$RMP_SERVER_ENV" \
-  -b 127.0.0.1 -p "$RMP_PORT" -P "$RMP_PIDFILE" > "$RMP_SERVER_LOG" 2>&1 &)
+  -b 127.0.0.1 -p "$RMP_PORT" -P "$RMP_PIDFILE" > "$RMP_SERVER_LOG" 2>&1 &) < /dev/null > /dev/null 2>&1
+# (the backgrounded subshell must not hold our stdout, or `start_server.sh | tail` never ends)
 
 # The first production start compiles the assets, so give it time.
 code=000
