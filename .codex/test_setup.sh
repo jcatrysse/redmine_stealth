@@ -77,7 +77,7 @@ case "$RMP_DB" in
   password: redmine
   encoding: utf8mb4
   variables:
-    transaction_isolation: "READ-COMMITTED"'
+    tx_isolation: "READ-COMMITTED"'
     ;;
   *) echo "ERROR: RMP_DB must be postgresql or mariadb, not '$RMP_DB'" >&2; exit 2 ;;
 esac
