@@ -51,6 +51,14 @@ class RedmineStealthTest < ActiveSupport::TestCase
     I18n.reload!
   end
 
+  # The old lib/redmine/menu_manager.rb alias-chained core's MenuItem and
+  # render_single_menu_node around link_to_remote (gone since Rails 3).
+  def test_core_menu_manager_is_not_patched
+    assert_not Redmine::MenuManager::MenuItem.method_defined?(:remote_options)
+    assert_not Redmine::MenuManager::MenuHelper.method_defined?(:render_single_menu_node_without_remote)
+    assert_not Redmine::MenuManager::MenuHelper.private_method_defined?(:render_single_menu_node_without_remote)
+  end
+
   def test_every_locale_has_the_same_keys
     dir = File.expand_path('../../config/locales', __dir__)
     keys = Dir[File.join(dir, '*.yml')].to_h do |file|
