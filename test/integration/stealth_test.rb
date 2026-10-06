@@ -49,4 +49,35 @@ class StealthIntegrationTest < Redmine::IntegrationTest
     assert_response :not_found
     assert_not cloaked_in_db?(User.find(2))
   end
+
+  def test_toggle_without_csrf_token_is_refused
+    log_user('jsmith', 'jsmith')
+    with_forgery_protection do
+      post '/stealth/toggle', xhr: true, headers: { 'Accept' => 'text/javascript' }
+      assert_response 422
+    end
+    assert_not cloaked_in_db?(User.find(2))
+  end
+
+  def test_toggle_with_csrf_token_works
+    log_user('jsmith', 'jsmith')
+    with_forgery_protection do
+      get '/my/page'
+      token = css_select('meta[name="csrf-token"]').first['content']
+      post '/stealth/toggle', xhr: true, params: { toggle: 'true' },
+           headers: { 'Accept' => 'text/javascript', 'X-CSRF-Token' => token }
+      assert_response :success
+    end
+    assert cloaked_in_db?(User.find(2))
+  end
+
+  private
+
+  def with_forgery_protection
+    saved = ActionController::Base.allow_forgery_protection
+    ActionController::Base.allow_forgery_protection = true
+    yield
+  ensure
+    ActionController::Base.allow_forgery_protection = saved
+  end
 end
