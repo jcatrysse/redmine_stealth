@@ -52,6 +52,14 @@ class StealthIntegrationTest < Redmine::IntegrationTest
     assert_select '#stealth_toggle', text: 'Tarnkappenmodus einschalten'
   end
 
+  def test_permission_label_is_translated
+    User.find(1).update!(language: 'de')
+    log_user('admin', 'admin')
+    get '/roles/1/edit'
+    assert_response :success
+    assert_select 'label', text: /Tarnkappenmodus wechseln/
+  end
+
   def test_login_turns_stealth_mode_off
     set_cloaked(User.find(2), true)
     log_user('jsmith', 'jsmith')
