@@ -37,16 +37,24 @@ class StealthIntegrationTest < Redmine::IntegrationTest
     assert_select 'script', text: /RedmineStealth\.cloak\("Disable Stealth Mode"\)/
   end
 
+  def test_failure_message_is_translated
+    log_user('jsmith', 'jsmith')
+    get '/projects/ecookbook'
+    assert_select 'script', text: /"Failed to toggle stealth mode\."/
+    assert_not_includes response.body, 'label_failed_to_toggle_stealth_mode'
+  end
+
+  def test_failure_message_follows_the_user_language
+    User.find(2).update!(language: 'de')
+    log_user('jsmith', 'jsmith')
+    get '/projects/ecookbook'
+    assert_select 'script', text: /"Tarnkappenmodus konnte nicht gewechselt werden\."/
+    assert_select '#stealth_toggle', text: 'Tarnkappenmodus einschalten'
+  end
+
   def test_login_turns_stealth_mode_off
     set_cloaked(User.find(2), true)
     log_user('jsmith', 'jsmith')
-    assert_not cloaked_in_db?(User.find(2))
-  end
-
-  def test_toggle_by_get_is_not_routed
-    log_user('jsmith', 'jsmith')
-    get '/stealth/toggle'
-    assert_response :not_found
     assert_not cloaked_in_db?(User.find(2))
   end
 
@@ -69,6 +77,13 @@ class StealthIntegrationTest < Redmine::IntegrationTest
       assert_response :success
     end
     assert cloaked_in_db?(User.find(2))
+  end
+
+  def test_toggle_by_get_is_not_routed
+    log_user('jsmith', 'jsmith')
+    get '/stealth/toggle'
+    assert_response :not_found
+    assert_not cloaked_in_db?(User.find(2))
   end
 
   private

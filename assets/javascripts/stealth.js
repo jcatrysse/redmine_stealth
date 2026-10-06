@@ -11,7 +11,7 @@ jQuery(function ($) {
     },
 
     notifyFailure: function () {
-      alert($('#stealth_toggle').data('failure-message'));
+      alert(RedmineStealth.failureMessage);
     }
 
   };

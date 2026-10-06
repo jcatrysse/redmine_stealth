@@ -32,8 +32,6 @@ Redmine::Plugin.register :redmine_stealth do
   menu_options = {
     html: {
       'id' => 'stealth_toggle',
-      # zet een key/string, geen vertaling op init moment
-      'data-failure-message' => 'label_failed_to_toggle_stealth_mode',
       'remote' => true,
       'method' => :post
     }

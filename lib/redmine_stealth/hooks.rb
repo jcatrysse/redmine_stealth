@@ -15,7 +15,8 @@ module RedmineStealth
 
       js_lib = 'stealth'
       javascript_include_tag(js_lib, :plugin => 'redmine_stealth') +
-        javascript_tag("jQuery(function($) { #{init_state} });")
+        javascript_tag("jQuery(function($) { RedmineStealth.failureMessage = " \
+                       "#{l(RedmineStealth::MESSAGE_TOGGLE_FAILED).to_json}; #{init_state} });")
     end
   end
 end
