@@ -1,7 +1,6 @@
 module RedmineStealth
   module JournalStealthPatch
     def self.included(base)
-      unloadable
       base.class_eval do
         alias_method :send_notification_without_stealth, :send_notification
         alias_method :send_notification, :send_notification_with_stealth

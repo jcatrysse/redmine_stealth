@@ -1,7 +1,5 @@
 class StealthController < ApplicationController
 
-  unloadable
-
   skip_before_action :verify_authenticity_token, :only => :toggle
   before_action :authorize_global, :only => :toggle
   accept_api_auth :toggle
