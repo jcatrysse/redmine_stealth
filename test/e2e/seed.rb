@@ -9,6 +9,8 @@
 #   port 3999 of this machine's first non-loopback IPv4 address (core refuses
 #   loopback targets); written to tmp/e2e-webhook-url.txt for the scenario.
 
+require 'socket'
+
 Setting.notified_events = (Setting.notified_events | %w(issue_added issue_updated issue_note_added))
 
 %w(admin manager reporter outsider).each do |login|
