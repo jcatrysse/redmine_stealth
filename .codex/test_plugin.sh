@@ -18,7 +18,7 @@ case "$REDMINE_DIR" in /*) ;; *) REDMINE_DIR="$ROOT/$REDMINE_DIR" ;; esac
 PLUGIN_NAME="$(basename "$ROOT")"
 export RAILS_ENV=test
 
-rsync -a --delete --exclude "/$(basename "$REDMINE_DIR")/" --exclude /.git/ "$ROOT/" "$REDMINE_DIR/plugins/$PLUGIN_NAME/"
+rsync -a --delete --exclude /redmine/ --exclude "/$(basename "$REDMINE_DIR")/" --exclude /.git/ "$ROOT/" "$REDMINE_DIR/plugins/$PLUGIN_NAME/"
 
 cd "$REDMINE_DIR"
 mkdir -p tmp/test-results

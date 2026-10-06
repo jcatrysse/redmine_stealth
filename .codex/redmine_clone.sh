@@ -27,4 +27,4 @@ fi
 PLUGIN_NAME="$(basename "$(pwd)")"
 mkdir -p "$REDMINE_DIR/plugins/$PLUGIN_NAME"
 # Anchored: an unanchored "redmine/" would also drop lib/redmine/ from the copy.
-rsync -a --delete --exclude "/$REDMINE_DIR/" --exclude /.git/ ./ "$REDMINE_DIR/plugins/$PLUGIN_NAME/"
+rsync -a --delete --exclude /redmine/ --exclude "/$(basename "$REDMINE_DIR")/" --exclude /.git/ ./ "$REDMINE_DIR/plugins/$PLUGIN_NAME/"

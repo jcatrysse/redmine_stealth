@@ -110,5 +110,4 @@ bundle config set --local path 'vendor/bundle'
 "${bundle_cmd[@]}" install --quiet
 "${bundle_cmd[@]}" exec rake db:drop db:create db:migrate
 "${bundle_cmd[@]}" exec rake redmine:plugins:migrate
-rm -f db/schema.rb
 echo "Test database ready on $RMP_DB."
