@@ -1,12 +1,12 @@
 jQuery(function ($) {
   window.RedmineStealth = {
     cloak: function (label) {
-      $('#stealth_toggle').text(label).data({params: {toggle: 'false'}});
+      $('#stealth_toggle').text(label).attr('data-params', 'toggle=false');
       $('body').removeClass('stealth_off').addClass('stealth_on');
     },
 
     decloak: function (label) {
-      $('#stealth_toggle').text(label).data({params: {toggle: 'true'}});
+      $('#stealth_toggle').text(label).attr('data-params', 'toggle=true');
       $('body').removeClass('stealth_on').addClass('stealth_off');
     },
 
