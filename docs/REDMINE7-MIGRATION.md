@@ -137,6 +137,7 @@ Measured 2026-10-06 on Redmine 7.0.1 (7.0-stable-GEOxyz @ 8067e23), Rails 8.1.3.
   stale "Enable" switched stealth off) and the checklists 500 were captured on Redmine 7. No separate
   Redmine 5.1 screenshots: the 5.1 header differs and the old behaviour is shown by the failing tests/runs.
 - **Migrations up/down**: n.v.t. (no migrations).
+- **Review 2026-10-07**: own review of the new commits, no findings; OpenAI (gpt-5) on `03a5578..5d2854d`: no findings (docs/reviews/openai-2026-10-07-5d2854d.md).
 - **Review**: own adversarial review of the whole diff (found the checklists loop by checking which GEOxyz
   plugins patch `send_notification`); OpenAI review (gpt-5) of `3b2ed40..HEAD`: round 1 one minor finding
   (seed without `require 'socket'`), fixed in `abd8751`; round 2 no findings
