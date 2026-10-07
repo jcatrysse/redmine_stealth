@@ -24,7 +24,8 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | Complexity (1 trivial .. 5 rewrite) | 1 |
 | Measured on | Redmine 7.0.1 (7.0-stable-GEOxyz + latest 7.0-stable), Rails 8.1.3.1, Ruby 3.3.6, PostgreSQL 16 and MariaDB 10.11 |
 | Branch head when this file was written | `12239d8` |
-| Migration session | done 2026-10-06; result below under "Results" |
+| Migration session | done 2026-10-06; Jan's decisions recorded and verified 2026-10-07 ("Decided by Jan") |
+| Target | Redmine 7.0-stable-GEOxyz on PostgreSQL 16 only (Jan, 2026-10-07: no 5.1, no MariaDB) |
 
 ## Already on this branch
 
@@ -44,6 +45,8 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
   - `b91fd7d` **combination fix**: `send_notification` patches prepended instead of alias-chained (with
     redmine_checklists every journal save raised `SystemStackError`)
   - `4ec9249` README; `df29b58`, `b412c74`, `8a55c19` e2e scenarios and evidence; `abd8751`, `f344eb8` OpenAI review
+- After Jan's decisions (2026-10-07): `f72ef34` decisions file; `0768e06` q2/q4 pinned in a unit test and
+  two scenarios (mail_scope, impersonate); `ffa4b1c` e2e evidence alone and with 21 GEOxyz plugins; this plan update.
 
 ## Work list for the migration session
 
@@ -74,6 +77,7 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 5. Run the plugin's whole test suite on Redmine 7.0-stable-GEOxyz with PostgreSQL AND MariaDB, and once on 5.1-stable if the branch is meant to stay 5.1-compatible.
    **Done**: PostgreSQL 16 and MariaDB 10.11 36 runs, 132 assertions, 0 failures; 5.1-stable (Ruby 3.2.6,
    PostgreSQL) 35 runs, 113 assertions, 0 failures (the webhook test exists only on 7).
+   Since Jan's decisions (2026-10-07) only PostgreSQL counts: 37 runs, 135 assertions, 0 failures.
 6. Verify every feature of the plugin by hand on a running Redmine 7 (screenshots).
    **Done**: ten scenarios, see "Inventory of functions" and "Results".
 
@@ -100,7 +104,9 @@ These GEOxyz commits are on the branch GEOxyz runs today and therefore on this b
 | Visual cue (black top bar, dark header) on every page | `view_layouts_base_html_head` / `_body_bottom` hooks | toggle, toggle_mobile, mail | toggle-menu-on, toggle-persists, mail-on-issue-note |
 | Permission "Toggle stealth mode" (global), admins always | Administration > Roles | `test/e2e/permissions.mjs` | permissions-role-permission, -manager-menu, -reporter-menu, -outsider-menu, -anonymous |
 | Mail suppression for issues and journals of the cloaked user | any issue create / note / edit | `test/e2e/mail.mjs` | mail-off-issue, mail-on-issue-note, mail-other-user-note, mail-off-again-note |
-| Webhooks not silenced (decision) | Redmine 7 webhooks | `test/e2e/webhook.mjs` | webhook-webhooks, webhook-issue-created |
+| Webhooks not silenced (decided q1) | Redmine 7 webhooks | `test/e2e/webhook.mjs` | webhook-webhooks, webhook-issue-created |
+| Only issue mails silenced, wiki still mails (decided q2) | wiki edit while cloaked | `test/e2e/mail_scope.mjs` | mail_scope-wiki-mails, mail_scope-issue-silent |
+| Toggle while impersonating sets the impersonated user's setting (decided q4) | redmine_impersonate | `test/e2e/impersonate.mjs` | impersonate-not-installed (alone); combined/impersonate-toggled-as-manager, -admin-own-state, -manager-setting-kept |
 | Stealth off at every sign-in | login | `test/e2e/login_decloak.mjs` | login_decloak-before-logout, -after-login |
 | REST API `POST /stealth/toggle.json` or `.xml`, optional `toggle=true` / `false` | API key / basic auth | `test/e2e/api.mjs` (calls listed in docs/e2e/api.md) | api-ui-after-api, api-ui-off |
 | CSRF protection of the session toggle | forged POST | `test/e2e/csrf.mjs` | csrf-with-token, csrf-without-token |
@@ -136,6 +142,23 @@ Measured 2026-10-06 on Redmine 7.0.1 (7.0-stable-GEOxyz @ 8067e23), Rails 8.1.3.
   (seed without `require 'socket'`), fixed in `abd8751`; round 2 no findings
   (docs/reviews/openai-2026-10-06-29b01e5.md, -f344eb8.md).
 
+### Results 2026-10-07 (after Jan's decisions, PostgreSQL 16 only)
+- Plugin tests alone: 37 runs, 135 assertions, 0 failures, 0 errors, 0 skips.
+- With 21 other GEOxyz plugins installed (`redmine70-migration` branches of impersonate, editauthor,
+  inline_edit_issues, custom_workflows, issue_templates, mail_digest, issue_view_columns,
+  view_customize, depending_custom_fields, parent_child_filters, issue_field_visibility, extended_api,
+  subtask, itil_priority, tint_issues, description_macros, wiki_extensions, drawio, project_workflows,
+  reporter_dashboards, checklists): 37 runs, 135 assertions, 0 failures. All of them that patch
+  `Issue/Journal#send_notification` now prepend (stealth, extended_api, checklists).
+- E2E alone (fresh database): smoke 10, core 6, twelve scenarios 31 screenshots, 0 problems (docs/e2e/).
+- E2E with the 21 plugins: all twelve stealth scenarios and core 0 problems (impersonate with 3 shots,
+  docs/e2e/combined/); smoke: **Project > Settings 500, not caused by stealth**:
+  redmine_mail_digest (`lib/issue_digest/projects_helper_patch.rb`), redmine_itil_priority
+  (`patches/projects_helper_patch.rb`) and redmine_depending_custom_fields
+  (`patches/projects_helper_patch.rb`) still alias_method-chain `ProjectsHelper#project_settings_tabs`
+  under checklists' prepend. With those three set aside, Settings, the issue list and an issue page
+  answer 200 as admin and manager. To be fixed in those three plugins.
+
 ### Findings outside this plugin (not fixed here)
 - The shared `start_server.sh` wrote `email_delivery` under `default:` in `config/configuration.yml`, which
   silently broke every mail-counting test (core's too) in the same checkout; fixed in this repo's copy
@@ -149,22 +172,36 @@ Measured 2026-10-06 on Redmine 7.0.1 (7.0-stable-GEOxyz @ 8067e23), Rails 8.1.3.
   An SSO plugin that logs users in another way leaves stealth mode as it was.
 - Real SMTP delivery (mail went to files).
 
+## Decided by Jan
+
+Jan Catrysse, 2026-10-07 (docs/DECISIONS-2026-10-07.md, answered in the coordinating session). Final.
+
+General, for every GEOxyz plugin:
+- GEOxyz goes straight to Redmine 7: no backports to 5.1; `redmine70-migration` goes live with
+  Redmine 7. 5.1 compatibility is no longer a requirement (rule removed below).
+- Production runs PostgreSQL 16 only; tests and e2e run on PostgreSQL. MariaDB runs are no longer
+  required; the earlier MariaDB results (2026-10-06, docs/e2e/mariadb/) stay as history.
+- deface without a version constraint: n.v.t., this plugin has no Gemfile and no deface.
+- A core method other plugins also patch is patched with `prepend`: done in `b91fd7d`
+  (`Issue#send_notification`, `Journal#send_notification`); the plugin has no other patch
+  (`grep alias_method` is empty). Checked with 21 other GEOxyz plugins, see Results 2026-10-07.
+- GitHub Actions stay manual (`workflow_dispatch`): they are.
+
+For this plugin (all four: option A, already built, recorded; pinned in tests or scenarios in `0768e06`):
+1. **q1 Webhooks in stealth mode**: A, "Webhooks laten doorgaan" (Gekoppelde systemen blijven gelijk
+   met Redmine.). Kept: `test_webhooks_are_still_triggered_when_cloaked`, `test/e2e/webhook.mjs`.
+2. **q2 Scope of the silence**: A, "Zo laten tot gebruikers erom vragen" (Geen werk; wie in
+   stealth-modus een wikipagina wijzigt, stuurt nog mails.). Kept: `test_wiki_edit_still_sends_mail_when_cloaked`,
+   `test/e2e/mail_scope.mjs` (cloaked wiki edit mails reporter, cloaked issue note mails nobody).
+3. **q3 Cue on phones**: A, "Zo laten" (Geen werk; de aanwijzing op telefoons blijft zwakker.). Kept:
+   `test/e2e/toggle_mobile.mjs`.
+4. **q4 Toggle while impersonating**: A, "Zo accepteren" (Geen werk; de beheerder wijzigt dan bewust de
+   instelling van de andere gebruiker.). Kept: `test/e2e/impersonate.mjs` (with redmine_impersonate:
+   the setting lands on the impersonated user, the admin's own stays off).
+
 ## Open questions for Jan
 
-1. **Webhooks in stealth mode.** Options: (a) leave them firing (built, no behaviour change); (b) suppress
-   webhooks triggered by a cloaked user (patch `Webhook.trigger`); (c) a setting. Recommendation: (a).
-   Webhooks feed integrations; silencing them would let external systems drift from Redmine, which is a
-   data problem, not a courtesy to colleagues.
-2. **Scope of the silence.** Only issue creation and issue journals are silenced; wiki edits, news,
-   documents, forum messages and attachments still mail (upstream behaviour; the old README suggested
-   wiki pages too, the README now says what it does). Options: keep, or extend to `WikiContent`, `News`,
-   `Message`, `Document`, `Comment` with the same prepend. Recommendation: keep unless users ask; each
-   extra model is one small patch and test.
-3. **Cue on phones.** On a phone only the header gets darker (no top bar). Options: keep, or add a
-   stronger mobile cue (e.g. a coloured bottom border on `#header`). Recommendation: keep; low use on phones.
-4. **Impersonation** (redmine_impersonate): toggling while impersonating sets the impersonated user's
-   preference (from the analysis; unchanged). Recommendation: accept, or hide the item while impersonating
-   if that confuses admins.
+None.
 
 ## After the upgrade (production)
 
@@ -176,6 +213,11 @@ Actions the person doing the upgrade must take, or know about, for this plugin:
 - The permission "Toggle stealth mode" is unchanged; nothing to reassign. Roles now show it translated.
 - Users who scripted the toggle without a CSRF token over the session (not the API) now get 422; the
   REST API with a key or basic auth is unchanged.
+- Project > Settings answers 500 while redmine_mail_digest, redmine_itil_priority or
+  redmine_depending_custom_fields still alias_method-chain `project_settings_tabs` (found 2026-10-07,
+  not this plugin); do not go live before those are on `prepend`.
+- Behaviour users should know (decided 2026-10-07): webhooks keep firing and wiki/news/forum/document
+  mails keep going out in stealth mode; on phones the cue is only the darker header.
 
 ## How to test
 
@@ -203,7 +245,7 @@ results quoted in the analysis come from it.
 1. **Start**: `git fetch && git checkout redmine70-migration && git pull`. Read this whole file,
    including the analysis report at the bottom. Do not reopen decisions recorded here.
 2. **Baseline, before you change anything**:
-   - the plugin's tests on Redmine 7.0-stable-GEOxyz with PostgreSQL and with MariaDB;
+   - the plugin's tests on Redmine 7.0-stable-GEOxyz with PostgreSQL;
    - a real running Redmine with this plugin (`./.codex/start_server.sh`) and the browser run
      (`./.codex/e2e.sh`: smoke over every page the plugin adds, plus the core issue flows).
    Write the numbers here. Something already broken now is a finding, not your regression.
@@ -215,9 +257,8 @@ results quoted in the analysis come from it.
 4. **GEOxyz changes**: go through the table above, one item at a time. Each kept or re-made change
    is its own commit with a test that proves it. Record the verdict in the table.
 5. **Work list**: then the numbered list, in order. One concern per commit.
-6. **Portability**: everything must run on Redmine's supported databases (PostgreSQL,
-   MySQL/MariaDB; SQLite where the plugin already supports it). Migrations must be reversible and
-   are run down and up on PostgreSQL and MariaDB.
+6. **Portability**: PostgreSQL 16 (Jan, 2026-10-07); keep SQL portable where it costs nothing.
+   Migrations must be reversible and are run down and up on PostgreSQL.
 7. **Together**: run with the other GEOxyz plugins installed (the migration kit's harness, or
    `RMP_EXTRA_PLUGINS`). A failure that only appears in combination is a finding to record here.
 8. **End to end, visually, every function**: on the real Redmine from `start_server.sh`
@@ -234,9 +275,8 @@ results quoted in the analysis come from it.
    - Functions without a page (mail in and out, REST API, rake tasks, cron, webhooks): exercise
      them against the same running instance (mails land in `redmine/tmp/mails`, `t.mails()`
      reads them; API through `t.page.request`) and record command and result.
-   - Before pictures where behaviour or layout changes: the branch GEOxyz runs today, on
-     Redmine 5.1, same scenarios, `RMP_E2E_OUT=docs/e2e/before`.
-   - Run the whole e2e set once on MariaDB as well (`RMP_DB=mariadb`, then `start_server.sh --reset`).
+   - Before pictures where behaviour or layout changes: on Redmine 7 with the old code,
+     `RMP_E2E_OUT=docs/e2e/before...`.
 9. **Independent review**: first your own, adversarial: re-read the whole diff as if someone
    else wrote it and you are paid to reject it. Then, **when `OPENAI_API_KEY` is set in the
    session**, `./.codex/openai_review.sh`: it sends the diff of this branch to an OpenAI model
@@ -281,8 +321,11 @@ results quoted in the analysis come from it.
   (on by default: `t.sudo()` in a scenario). The breaker list is in the migration kit's CHECKLIST.md.
 - **Locales**: keep the locales the plugin ships in sync; translate a new key by matching the
   closest existing key in the same file, not from scratch; do not add new languages.
-- **5.1 compatibility**: prefer fixes that also run on Redmine 5.1 so they can be merged early;
-  say so when a fix cannot.
+- **Redmine 7 only** (Jan, 2026-10-07): no 5.1 compatibility, no code paths that exist only for 5.1.
+- **PostgreSQL 16 only** (Jan, 2026-10-07): tests and e2e on PostgreSQL; keep SQL portable where it
+  costs nothing; a MariaDB-only problem is a note here, not a blocker.
+- **Shared core methods**: a core method other plugins also patch is patched with `prepend`, never
+  `alias_method` (Jan, 2026-10-07).
 - **Git**: work on `redmine70-migration` only; never push to the default branch; never force-push
   a branch someone else uses. Descriptive commit messages (what and why). Push after every
   commit, together with the updated status in this file: a cloud session can stop at a usage
@@ -293,7 +336,7 @@ results quoted in the analysis come from it.
 ## Definition of done
 
 - All items of the work list are done or explicitly deferred with a reason, in this file.
-- The plugin's tests are green on Redmine 7.0-stable-GEOxyz with PostgreSQL and MariaDB
+- The plugin's tests are green on Redmine 7.0-stable-GEOxyz with PostgreSQL
   (numbers in this file); boot, production-like eager load, migrations up/down OK.
 - Every function in the inventory exercised end to end on a real running Redmine, with and
   without permissions and on its failure paths; `./.codex/e2e.sh` green; screenshots looked at,
