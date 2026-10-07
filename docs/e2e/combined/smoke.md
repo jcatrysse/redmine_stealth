@@ -1,6 +1,6 @@
 # smoke
 
-Run 2026-10-07T16:06:59.498Z against http://127.0.0.1:3000.
+Run 2026-10-07T16:09:30.532Z against http://127.0.0.1:3000.
 
 | screenshot | user | URL | shows |
 |---|---|---|---|
@@ -9,8 +9,12 @@ Run 2026-10-07T16:06:59.498Z against http://127.0.0.1:3000.
 | ![](smoke-03.png) | admin | `/projects/e2e-project/issues` | /projects/e2e-project/issues (HTTP 200) |
 | ![](smoke-04.png) | admin | `/issues/1` | /issues/1 (HTTP 200) |
 | ![](smoke-05.png) | admin | `/projects/e2e-project/issues/new` | /projects/e2e-project/issues/new (HTTP 200) |
-| ![](smoke-06.png) | admin | `/projects/e2e-project/settings` | /projects/e2e-project/settings (HTTP 200) |
+| ![](smoke-06.png) | admin | `/projects/e2e-project/settings` | /projects/e2e-project/settings (HTTP 500) |
 | ![](smoke-07.png) | admin | `/my/page` | /my/page (HTTP 200) |
 | ![](smoke-08.png) | admin | `/my/account` | /my/account (HTTP 200) |
 | ![](smoke-09.png) | admin | `/admin` | /admin (HTTP 200) |
 | ![](smoke-10.png) | admin | `/admin/plugins` | /admin/plugins (HTTP 200) |
+
+## Problems
+
+- /projects/e2e-project/settings: HTTP 500
