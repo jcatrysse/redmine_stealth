@@ -11,7 +11,7 @@
 
 require 'socket'
 
-Setting.notified_events = (Setting.notified_events | %w(issue_added issue_updated issue_note_added))
+Setting.notified_events = (Setting.notified_events | %w(issue_added issue_updated issue_note_added wiki_content_updated))
 
 %w(admin manager reporter outsider).each do |login|
   user = User.find_by(login: login) or next

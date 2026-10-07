@@ -7,7 +7,8 @@ class StealthNotificationTest < ActiveSupport::TestCase
 
   fixtures :projects, :users, :email_addresses, :user_preferences, :members, :member_roles, :roles,
            :trackers, :projects_trackers, :issue_statuses, :issues, :enumerations,
-           :enabled_modules, :journals, :journal_details, :workflows, :watchers
+           :enabled_modules, :journals, :journal_details, :workflows, :watchers,
+           :wikis, :wiki_pages, :wiki_contents
 
   def setup
     ActionMailer::Base.deliveries.clear
@@ -95,6 +96,20 @@ class StealthNotificationTest < ActiveSupport::TestCase
     calls.clear
     klass.new.send_notification
     assert_equal [], calls
+  end
+
+  # Decided by Jan 2026-10-07: stealth mode silences issue mails only; a wiki
+  # edit by a cloaked user still notifies (docs/REDMINE7-MIGRATION.md).
+  def test_wiki_edit_still_sends_mail_when_cloaked
+    User.current = User.find(2)
+    set_cloaked(User.current, true)
+    content = WikiContent.find(1)
+    with_settings notified_events: %w(wiki_content_updated) do
+      content.text = 'Changed while stealthy'
+      content.author = User.current
+      assert content.save
+    end
+    assert_operator ActionMailer::Base.deliveries.size, :>, 0
   end
 
   # Redmine 7 webhooks are integrations, not notifications to people: stealth
